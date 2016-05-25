@@ -59,12 +59,39 @@
     <!-- *** This fieldType is used by Sunspot! *** -->
     <fieldType name="rand" class="solr.RandomSortField" omitNorms="true"/>
     <!-- *** This fieldType is used by Sunspot! *** -->
-    <fieldType name="text" class="solr.TextField" omitNorms="false">
-      <analyzer>
+    <fieldType name="autosuggest" class="solr.TextField" positionIncrementGap="100">
+      <analyzer type="index">
+        <charFilter class="solr.MappingCharFilterFactory" mapping="mapping-FoldToASCII.txt"/>
         <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
         <filter class="solr.StandardFilterFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.PorterStemFilterFactory"/>
+        <filter class="solr.EdgeNGramFilterFactory" minGramSize="1" maxGramSize="15" side="front"/>
+      </analyzer>
+      <analyzer type="query">
+        <charFilter class="solr.MappingCharFilterFactory" mapping="mapping-FoldToASCII.txt"/>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+        <filter class="solr.StandardFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldType>
+    <fieldType name="text" class="solr.TextField" omitNorms="false">
+      <analyzer type="index">
+        <charFilter class="solr.MappingCharFilterFactory" mapping="mapping-FoldToASCII.txt"/>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+        <filter class="solr.StandardFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.KStemFilterFactory"/>
+      </analyzer>
+      <analyzer type="query">
+        <charFilter class="solr.MappingCharFilterFactory" mapping="mapping-FoldToASCII.txt"/>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+        <filter class="solr.StandardFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.KStemFilterFactory"/>
       </analyzer>
     </fieldType>
     <!-- *** This fieldType is used by Sunspot! *** -->
@@ -84,22 +111,8 @@
     <!-- *** This fieldType is used by Sunspot! *** -->
     <fieldType name="tfloat" class="solr.TrieFloatField" omitNorms="true"/>
     <!-- *** This fieldType is used by Sunspot! *** -->
-    <fieldType name="tdate" class="solr.TrieDateField"
-               omitNorms="true"/>
+    <fieldType name="tdate" class="solr.TrieDateField" omitNorms="true"/>
 
-    <!-- Special field type for spell correction. Be careful about
-         adding filters here, as they apply *before* your values go in
-         the spellcheck. For example, the lowercase filter here means
-         all spelling suggestions will be lower case (without it,
-         though, you'd have duplicate suggestions for lower and proper
-         cased words). -->
-    <fieldType name="textSpell" class="solr.TextField" positionIncrementGap="100" omitNorms="true">
-      <analyzer>
-        <tokenizer class="solr.StandardTokenizerFactory"/>
-        <filter class="solr.StandardFilterFactory"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
-      </analyzer>
-    </fieldType>
     <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
     <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
   </types>
@@ -250,11 +263,10 @@
     <dynamicField name="*_llm" stored="false" type="location" multiValued="true" indexed="true"/>
     <dynamicField name="*_lls" stored="true" type="location" multiValued="false" indexed="true"/>
     <dynamicField name="*_llms" stored="true" type="location" multiValued="true" indexed="true"/>
-    <field name="textSpell" stored="false" type="textSpell" multiValued="true" indexed="true"/>
-    <!-- required by Solr 4 -->
-    <field name="_version_" type="string" indexed="true" stored="true" multiValued="false" />
-  </fields>
 
+    <dynamicField name="*_as" type="autosuggest" indexed="true" multiValued="true" stored="false"/>
+    <dynamicField name="*_ass" type="autosuggest" indexed="true" multiValued="true" stored="true"/>
+  </fields>
   <!-- Field to use to determine and enforce document uniqueness.
       Unless this field is marked with required="false", it will be a required field
    -->
@@ -262,14 +274,8 @@
   <!-- field for the QueryParser to use when an explicit fieldname is absent -->
   <defaultSearchField>text</defaultSearchField>
   <!-- SolrQueryParser configuration: defaultOperator="AND|OR" -->
-  <solrQueryParser defaultOperator="AND"/>
+  <solrQueryParser defaultOperator="OR" />
   <!-- copyField commands copy one field to another at the time a document
         is added to the index.  It's used either to index the same field differently,
-        or to add multiple fields to the same field for easier/faster
-        searching.  -->
-
-  <!-- Use copyField to copy the fields you want to run spell checking
-       on into one field. For example: -->
-  <copyField source="*_text"  dest="textSpell" />
-  <copyField source="*_s"  dest="textSpell" />
+        or to add multiple fields to the same field for easier/faster searching.  -->
 </schema>

@@ -1,5 +1,16 @@
-desc 'Release Sunspot, Sunspot::Rails and Sunspot::Solr to Rubygems.org'
-task :release do
+require 'rake/clean'
+require 'rake/file_list'
+
+TO_CLEAN = Rake::FileList.new do |fl|
+  fl.include 'sunspot_rails/tmp/**/*', 'sunspot/vendor/**/*'
+  fl.include '**/.bundle'
+  fl.exclude 'sunspot_rails/tmp/.gitkeep'
+end
+
+CLEAN.include TO_CLEAN
+
+desc 'Build Sunspot, Sunspot::Rails and Sunspot::Solr gems'
+task :build do
   FileUtils.cp('README.md', 'sunspot/')
 
   require File.expand_path('../sunspot/lib/sunspot/version', __FILE__)
@@ -10,20 +21,34 @@ task :release do
 
   FileUtils.cd 'sunspot' do
     system "gem build sunspot.gemspec"
-    system "gem push sunspot-#{Sunspot::VERSION}.gem"
-    FileUtils.rm "sunspot-#{Sunspot::VERSION}.gem"
   end
 
   FileUtils.cd 'sunspot_rails' do
     system "gem build sunspot_rails.gemspec"
-    system "gem push sunspot_rails-#{Sunspot::VERSION}.gem"
-    FileUtils.rm("sunspot_rails-#{Sunspot::VERSION}.gem")
   end
 
   FileUtils.cd 'sunspot_solr' do
     system "gem build sunspot_solr.gemspec"
-    system "gem push sunspot_solr-#{Sunspot::VERSION}.gem"
-    FileUtils.rm("sunspot_solr-#{Sunspot::VERSION}.gem")
+  end
+end
+
+desc "Copy gems to rubygems.chroniclevitae.com"
+task :release do
+  require File.expand_path('../sunspot/lib/sunspot/version', __FILE__)
+
+  FileUtils.cd 'sunspot' do
+    system "gem inabox sunspot-#{Sunspot::VERSION}.gem"
+    FileUtils.rm "sunspot-#{Sunspot::VERSION}.gem"
+  end
+
+  FileUtils.cd 'sunspot_rails' do
+    system "gem inabox sunspot_rails-#{Sunspot::VERSION}.gem"
+    FileUtils.rm "sunspot_rails-#{Sunspot::VERSION}.gem"
+  end
+
+  FileUtils.cd 'sunspot_solr' do
+    system "gem inabox sunspot_solr-#{Sunspot::VERSION}.gem"
+    FileUtils.rm "sunspot_solr-#{Sunspot::VERSION}.gem"
   end
 end
 
@@ -44,5 +69,7 @@ task :default do
                 "GEM=sunspot_rails RAILS=3.0.0 ci/travis.sh",
                 "GEM=sunspot_rails RAILS=3.1.0 ci/travis.sh",
                 "GEM=sunspot_rails RAILS=3.2.0 ci/travis.sh",
-                "GEM=sunspot_rails RAILS=4.0.0 ci/travis.sh" ].join(" && ")) ? 0 : 1
+                "GEM=sunspot_rails RAILS=4.0.0 ci/travis.sh",
+                "GEM=sunspot_rails RAILS=4.1.0 ci/travis.sh",
+                "GEM=sunspot_rails RAILS=4.2.0 ci/travis.sh"].join(" && ")) ? 0 : 1
 end
